@@ -11,11 +11,16 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@types/express": "^5.0.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@dotenvx/dotenvx": "^1.38.3",
+    "@escape.tech/graphql-armor": "^3.1.2",
+    "graphql": "^16.10.0",
+    "graphql-compose": "^9.1.0",
+    "graphql-compose-mongoose": "^10.0.0",
+    "graphql-yoga": "^5.12.1",
+    "mongoose": "^8.11.0"
   }
 }
