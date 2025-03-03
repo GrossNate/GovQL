@@ -107,6 +107,14 @@ schemaComposer.Query.addFields({
   voteOne: VoteContainerTC.mongooseResolvers.findOne(),
   voteMany: VoteContainerTC.mongooseResolvers.findMany(),
   voteCount: VoteContainerTC.mongooseResolvers.count(),
+  yeaVotes: VoteContainerTC.mongooseResolvers.findMany().addFilterArg({
+    name: 'votedYea',
+    type: 'String',
+    description: 'Filter votes by yeas from a Congressperson',
+    query: (query, value) => {
+      query['votes.Yea.last_name'] = { $in: [value] };
+    }
+  })
 });
 
 const rateLimitDirective = new GraphQLDirective({
@@ -173,3 +181,16 @@ const yoga = createYoga({
     console.info('Server is running on http://localhost:4000/graphql');
   });
 })();
+
+/* 
+query {
+  yeaVotes(filter: {votedYea: "Durbin"}) {
+    vote_id
+    question
+    result
+    type
+    source_url
+    date
+  }
+}
+*/
