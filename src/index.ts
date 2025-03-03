@@ -2,8 +2,11 @@ import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import mongoose from 'mongoose';
 import { composeMongoose } from 'graphql-compose-mongoose';
-import { schemaComposer } from 'graphql-compose';
-import { EnvelopArmor } from '@escape.tech/graphql-armor';
+import {
+  schemaComposer,
+  ResolverFilterArgConfigDefinition,
+} from 'graphql-compose';
+// import { EnvelopArmor } from '@escape.tech/graphql-armor';
 import dotenvx from '@dotenvx/dotenvx';
 import { useRateLimiter } from '@envelop/rate-limiter';
 import {
@@ -13,15 +16,15 @@ import {
   GraphQLString,
   GraphQLError,
 } from 'graphql';
+// import { usePrometheus } from '@graphql-yoga/plugin-prometheus';
+import { useOpenTelemetry } from '@envelop/opentelemetry';
 
 dotenvx.config();
 
 const MONGO_URI = process.env.MONGO_URI ?? '';
 
-const armor = new EnvelopArmor();
-const protection = armor.protect();
-
-// STEP 1: DEFINE MONGOOSE SCHEMA AND MODEL
+// const armor = new EnvelopArmor();
+// const protection = armor.protect();
 
 const BillSchema = new mongoose.Schema(
   {
@@ -96,25 +99,47 @@ const VoteContainerSchema = new mongoose.Schema({
 
 const VoteContainer = mongoose.model('votes', VoteContainerSchema);
 
-// STEP 2: CONVERT MONGOOSE MODEL TO GraphQL PIECES
-
 // TODO: figure out how to resolve the TS error without ignoring.
 // @ts-ignore
 const VoteContainerTC = composeMongoose(VoteContainer);
 
-// STEP 3: ADD NEEDED CRUD USER OPERATIONS TO THE GraphQL SCHEMA
+// STEP 2.5: Create some filters
+const votedYeaFilter: ResolverFilterArgConfigDefinition<
+  typeof VoteSchema,
+  string | string[]
+> = {
+  name: 'votedYea',
+  type: 'String',
+  description: 'Filter votes by yeas from a Congressperson',
+  query: (query, value) => {
+    query['votes.Yea.last_name'] = { $in: [value] };
+  },
+};
+const votedNayFilter: ResolverFilterArgConfigDefinition<
+  typeof VoteSchema,
+  string | string[]
+> = {
+  name: 'votedNay',
+  type: 'String',
+  description: 'Filter votes by nays from a Congressperson',
+  query: (query, value) => {
+    query['votes.Nay.last_name'] = { $in: [value] };
+  },
+};
+
 schemaComposer.Query.addFields({
-  voteOne: VoteContainerTC.mongooseResolvers.findOne(),
-  voteMany: VoteContainerTC.mongooseResolvers.findMany(),
-  voteCount: VoteContainerTC.mongooseResolvers.count(),
-  yeaVotes: VoteContainerTC.mongooseResolvers.findMany().addFilterArg({
-    name: 'votedYea',
-    type: 'String',
-    description: 'Filter votes by yeas from a Congressperson',
-    query: (query, value) => {
-      query['votes.Yea.last_name'] = { $in: [value] };
-    }
-  })
+  voteOne: VoteContainerTC.mongooseResolvers
+    .findOne()
+    .addFilterArg(votedYeaFilter)
+    .addFilterArg(votedNayFilter),
+  voteMany: VoteContainerTC.mongooseResolvers
+    .findMany()
+    .addFilterArg(votedYeaFilter)
+    .addFilterArg(votedNayFilter),
+  voteCount: VoteContainerTC.mongooseResolvers
+    .count()
+    .addFilterArg(votedYeaFilter)
+    .addFilterArg(votedNayFilter),
 });
 
 const rateLimitDirective = new GraphQLDirective({
@@ -132,38 +157,76 @@ schemaComposer.addDirective(rateLimitDirective);
 schemaComposer.Query.setFieldDirectiveByName('voteOne', 'rateLimit', {
   max: 10,
   window: '30s',
-  message: "You're limited!",
 });
 
 schemaComposer.Query.setFieldDirectiveByName('voteMany', 'rateLimit', {
   max: 10,
   window: '30s',
-  message: "You're limited!",
 });
 schemaComposer.Query.setFieldDirectiveByName('voteCount', 'rateLimit', {
   max: 10,
   window: '30s',
-  message: "You're limited!",
 });
-// STEP 4: BUILD GraphQL SCHEMA OBJECT
-const schema = schemaComposer.buildSchema();
-export default schema;
 
-// LAST STEP: Actually start running the server
+const schema = schemaComposer.buildSchema();
+
 const yoga = createYoga({
   schema,
   plugins: [
-    ...protection.plugins,
+    // ...protection.plugins,
     useRateLimiter({
       identifyFn: (context: any) => context?.ip ?? null,
-      onRateLimitError(event) {
-        throw new GraphQLError(event.error);
+      onRateLimitError() {
+        throw new GraphQLError(
+          "You've been rate limited! Cool your heels and try again later."
+        );
       },
+    }),
+    // usePrometheus({
+    //   endpoint: '/metrics', // optional, default is `/metrics`, you can disable it by setting it to `false` if registry is configured in "push" mode
+    //   // Optional, see default values below
+    //   metrics: {
+    //     // By default, these are the metrics that are enabled:
+    //     graphql_envelop_request_time_summary: true,
+    //     graphql_envelop_phase_parse: true,
+    //     graphql_envelop_phase_validate: true,
+    //     graphql_envelop_phase_context: true,
+    //     graphql_envelop_phase_execute: true,
+    //     graphql_envelop_phase_subscribe: true,
+    //     graphql_envelop_error_result: true,
+    //     graphql_envelop_deprecated_field: true,
+    //     graphql_envelop_request_duration: true,
+    //     graphql_envelop_schema_change: true,
+    //     graphql_envelop_request: true,
+    //     graphql_yoga_http_duration: true,
+
+    //     // This metric is disabled by default.
+    //     // Warning: enabling resolvers level metrics will introduce significant overhead
+    //     graphql_envelop_execute_resolver: false,
+    //   },
+    // }),
+    useOpenTelemetry({
+      resolvers: true, // Tracks resolvers calls, and tracks resolvers thrown errors
+      variables: true, // Includes the operation variables values as part of the metadata collected
+      result: true, // Includes execution result object as part of the metadata collected
     }),
   ],
   context: ({ request }) => {
     const ip = request.headers.get('ip') ?? null;
     return { ip };
+  },
+  graphiql: {
+    defaultQuery: `
+      query {
+        voteMany(filter: {votedYea: "Durbin", votedNay: "Duckworth"}) {
+          vote_id
+          question
+          result
+          type
+          date
+        }
+      }
+    `,
   },
 });
 
@@ -181,16 +244,3 @@ const yoga = createYoga({
     console.info('Server is running on http://localhost:4000/graphql');
   });
 })();
-
-/* 
-query {
-  yeaVotes(filter: {votedYea: "Durbin"}) {
-    vote_id
-    question
-    result
-    type
-    source_url
-    date
-  }
-}
-*/

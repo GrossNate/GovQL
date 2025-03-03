@@ -16,12 +16,15 @@
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.38.3",
+    "@envelop/opentelemetry": "^7.0.1",
     "@envelop/rate-limiter": "^7.0.2",
     "@escape.tech/graphql-armor": "^3.1.2",
+    "@graphql-yoga/plugin-prometheus": "^6.7.2",
     "graphql": "^16.10.0",
     "graphql-compose": "^9.1.0",
     "graphql-compose-mongoose": "^10.0.0",
     "graphql-yoga": "^5.12.1",
-    "mongoose": "^8.11.0"
+    "mongoose": "^8.11.0",
+    "prom-client": "^15.1.3"
   }
 }
