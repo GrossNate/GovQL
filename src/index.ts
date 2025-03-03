@@ -5,6 +5,14 @@ import { composeMongoose } from 'graphql-compose-mongoose';
 import { schemaComposer } from 'graphql-compose';
 import { EnvelopArmor } from '@escape.tech/graphql-armor';
 import dotenvx from '@dotenvx/dotenvx';
+import { useRateLimiter } from '@envelop/rate-limiter';
+import {
+  GraphQLDirective,
+  DirectiveLocation,
+  GraphQLInt,
+  GraphQLString,
+  GraphQLError,
+} from 'graphql';
 
 dotenvx.config();
 
@@ -100,12 +108,56 @@ schemaComposer.Query.addFields({
   voteMany: VoteContainerTC.mongooseResolvers.findMany(),
   voteCount: VoteContainerTC.mongooseResolvers.count(),
 });
+
+const rateLimitDirective = new GraphQLDirective({
+  name: 'rateLimit',
+  locations: [DirectiveLocation.FIELD_DEFINITION],
+  args: {
+    max: { type: GraphQLInt },
+    window: { type: GraphQLString },
+    message: { type: GraphQLString },
+  },
+});
+
+schemaComposer.addDirective(rateLimitDirective);
+
+schemaComposer.Query.setFieldDirectiveByName('voteOne', 'rateLimit', {
+  max: 10,
+  window: '30s',
+  message: "You're limited!",
+});
+
+schemaComposer.Query.setFieldDirectiveByName('voteMany', 'rateLimit', {
+  max: 10,
+  window: '30s',
+  message: "You're limited!",
+});
+schemaComposer.Query.setFieldDirectiveByName('voteCount', 'rateLimit', {
+  max: 10,
+  window: '30s',
+  message: "You're limited!",
+});
 // STEP 4: BUILD GraphQL SCHEMA OBJECT
 const schema = schemaComposer.buildSchema();
 export default schema;
 
 // LAST STEP: Actually start running the server
-const yoga = createYoga({ schema, plugins: [...protection.plugins] });
+const yoga = createYoga({
+  schema,
+  plugins: [
+    ...protection.plugins,
+    useRateLimiter({
+      identifyFn: (context: any) => context?.ip ?? null,
+      onRateLimitError(event) {
+        throw new GraphQLError(event.error);
+      },
+    }),
+  ],
+  context: ({ request }) => {
+    const ip = request.headers.get('ip') ?? null;
+    return { ip };
+  },
+});
 
 (async () => {
   try {
@@ -114,7 +166,7 @@ const yoga = createYoga({ schema, plugins: [...protection.plugins] });
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
   }
-  
+
   const server = createServer(yoga);
 
   server.listen(4000, () => {
