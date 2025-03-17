@@ -15,6 +15,7 @@ import {
   GraphQLInt,
   GraphQLString,
   GraphQLError,
+  printSchema,
 } from 'graphql';
 // import { usePrometheus } from '@graphql-yoga/plugin-prometheus';
 import { useOpenTelemetry } from '@envelop/opentelemetry';
@@ -168,7 +169,9 @@ schemaComposer.Query.setFieldDirectiveByName('voteCount', 'rateLimit', {
   window: '30s',
 });
 
-const schema = schemaComposer.buildSchema();
+export const schema = schemaComposer.buildSchema();
+
+console.log(printSchema(schema));
 
 const yoga = createYoga({
   schema,
@@ -217,15 +220,15 @@ const yoga = createYoga({
   },
   graphiql: {
     defaultQuery: `
-      query {
-        voteMany(filter: {votedYea: "Durbin", votedNay: "Duckworth"}) {
-          vote_id
-          question
-          result
-          type
-          date
-        }
-      }
+query {
+  voteMany(filter: {votedYea: "Durbin", votedNay: "Duckworth"}) {
+    vote_id
+    question
+    result
+    type
+    date
+  }
+}
     `,
   },
 });
