@@ -1,0 +1,11 @@
+services:
+  scraper:
+    build:
+      context: .
+      dockerfile: ./scraper/Dockerfile
+    volumes:
+      - scraped-data:/congress
+
+
+volumes:
+  scraped-data:
