@@ -57,9 +57,9 @@ function generateSchemaFromCollection() {
         yield mongoose_1.default.connect(MONGO_URI);
         const db = mongoose_1.default.connection;
         const collection = db.collection(COLLECTION_NAME);
-        // Fetch all documents from the collection
-        const allDocs = yield collection.find().toArray();
-        if (allDocs.length === 0) {
+        // Fetch a sample of documents from the collection
+        const sampleDocs = yield collection.find().limit(10).toArray();
+        if (sampleDocs.length === 0) {
             console.log('No documents found in the collection.');
             mongoose_1.default.disconnect();
             return;
@@ -81,28 +81,16 @@ function generateSchemaFromCollection() {
                 return new mongoose_1.Schema(inferSchema(value));
             return mongoose_1.Schema.Types.Mixed;
         }
-        // Function to merge schemas from multiple documents
-        function inferSchema(documents) {
+        // Function to infer a schema from a document
+        function inferSchema(document) {
             const schemaDefinition = {};
-            for (const document of documents) {
-                for (const key in document) {
-                    if (!schemaDefinition[key]) {
-                        schemaDefinition[key] = inferType(document[key]);
-                    }
-                    else {
-                        // Ensure the type remains consistent
-                        const existingType = schemaDefinition[key];
-                        const newType = inferType(document[key]);
-                        if (existingType !== newType) {
-                            schemaDefinition[key] = mongoose_1.Schema.Types.Mixed;
-                        }
-                    }
-                }
+            for (const key in document) {
+                schemaDefinition[key] = inferType(document[key]);
             }
             return schemaDefinition;
         }
-        // Generate schema from all documents
-        const inferredSchema = new mongoose_1.Schema(inferSchema(allDocs), { timestamps: true });
+        // Generate schema from the first document
+        const inferredSchema = new mongoose_1.Schema(inferSchema(sampleDocs[1]), { timestamps: true });
         console.log('Generated Schema:', inferredSchema);
         mongoose_1.default.disconnect();
     });

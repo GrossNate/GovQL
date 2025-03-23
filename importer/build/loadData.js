@@ -12,8 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const dotenvx_1 = __importDefault(require("@dotenvx/dotenvx"));
-dotenvx_1.default.config();
 const mongoose_1 = __importDefault(require("mongoose"));
 const fs_1 = require("fs");
 const path_1 = __importDefault(require("path"));
@@ -71,7 +69,7 @@ function main() {
             process.exit(1);
         }
         // Define the base directory where your JSON files are stored.
-        const baseDir = '/Users/nathangross/capstone/react/ideation/congress-python/congress/data/119/votes/2025'; // <-- Update this path as needed
+        const baseDir = '/congress'; // <-- Update this path as needed
         // Load JSON files recursively and insert them into MongoDB
         yield loadJSONFiles(baseDir);
         console.log('Finished loading JSON files.');

@@ -1,6 +1,3 @@
-import dotenvx from '@dotenvx/dotenvx';
-dotenvx.config();
-
 import mongoose from 'mongoose';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -59,7 +56,7 @@ async function main() {
   }
 
   // Define the base directory where your JSON files are stored.
-  const baseDir = '/Users/nathangross/capstone/react/ideation/congress-python/congress/data/119/votes/2025'; // <-- Update this path as needed
+  const baseDir = '/congress'; // <-- Update this path as needed
 
   // Load JSON files recursively and insert them into MongoDB
   await loadJSONFiles(baseDir);

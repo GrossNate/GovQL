@@ -5,7 +5,34 @@ services:
       dockerfile: ./scraper/Dockerfile
     volumes:
       - scraped-data:/congress
-
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+    volumes:
+      - mongo-data:/data/db
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME
+      - ME_CONFIG_MONGODB_ADMINPASSWORD
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH=false
+  loader:
+    build: importer/.
+    environment:
+      - MONGO_URI
+    volumes:
+      - scraped-data:/congress
+    depends_on:
+      - mongo
 
 volumes:
   scraped-data:
+  mongo-data:
