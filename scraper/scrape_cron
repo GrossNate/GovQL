@@ -1,1 +1,0 @@
-45 * * * * cd /congress && /usr/local/bin/usc-run votes >> /var/log/cron.log 2>&1

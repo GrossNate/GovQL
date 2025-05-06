@@ -1,5 +1,5 @@
 import { RelayEnvironmentProvider } from "react-relay";
-import { RelayEnvironment } from "./RelayEnvironment";
+import { RelayEnvironment } from "./RelayEnvironment.ts";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
