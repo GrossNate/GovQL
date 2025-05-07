@@ -1,5 +1,5 @@
 # This actually builds the .js files we use using tsc
-FROM node:lts as builder
+FROM node:lts AS builder
 WORKDIR /usr/src/app
 COPY package*.json .
 RUN npm ci
@@ -8,7 +8,7 @@ RUN npm run tsc
 
 # This builds a slimmer version of the dependencies for running only.
 FROM node:lts-slim
-ENV NODE_ENV production
+ENV NODE_ENV=production
 USER node
 WORKDIR /usr/src/app
 COPY package*.json ./

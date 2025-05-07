@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import mongoose from 'mongoose';
-import { composeMongoose } from 'graphql-compose-mongoose';
+import * as composeMongoose from 'graphql-compose-mongoose';
 import {
   schemaComposer,
   ResolverFilterArgConfigDefinition,
@@ -112,7 +112,7 @@ const votedYeaFilter: ResolverFilterArgConfigDefinition<
   name: 'votedYea',
   type: 'String',
   description: 'Filter votes by yeas from a Congressperson',
-  query: (query, value) => {
+  query: (query: any, value: any) => {
     query['votes.Yea.last_name'] = { $in: [value] };
   },
 };
@@ -123,7 +123,7 @@ const votedNayFilter: ResolverFilterArgConfigDefinition<
   name: 'votedNay',
   type: 'String',
   description: 'Filter votes by nays from a Congressperson',
-  query: (query, value) => {
+  query: (query: any, value: any) => {
     query['votes.Nay.last_name'] = { $in: [value] };
   },
 };
