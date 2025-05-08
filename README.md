@@ -1,9 +1,8 @@
 <img
-  src="./govql-logo.svg" 
-  alt="GovQL Logo - American flag cut-out behind a GraphQL logo rendered in dollar bill green, because I'm subtle" 
-  width="400"/>
+  src="./govql-social-card.svg" 
+  alt="GovQL Logo"
+  width="640" />
 
-# GovQL
 ## Making Government Data Available in GraphQL
 
 Lots of government data is available, but that doesn't mean it's easy to access
