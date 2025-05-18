@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 import { promises as fs } from 'fs';
 import path from 'path';
+import recursivelyProcessFiles from './recursivelyProcessFiles';
 
-// Define an interface for our document (empty since we allow any JSON structure)
+// Define interface for our document (empty since we allow any JSON structure)
 interface JsonDocDocument extends mongoose.Document {}
 
 // Create a flexible schema (strict mode disabled) to accept any JSON data
