@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
-import { promises as fs } from 'fs';
-import path from 'path';
 import recursivelyProcessFiles from './recursivelyProcessFiles';
+import logger from './logger';
 
 // Define interface for our document (empty since we allow any JSON structure)
 interface JsonDocDocument extends mongoose.Document {}
@@ -10,49 +9,29 @@ interface JsonDocDocument extends mongoose.Document {}
 const JsonDocSchema = new mongoose.Schema({}, { strict: false });
 const JsonDoc = mongoose.model<JsonDocDocument>('votes', JsonDocSchema);
 
-/**
- * Recursively traverses the given directory and inserts any JSON files into MongoDB.
- * @param directory - The base directory to scan.
- */
-async function loadJSONFiles(directory: string): Promise<void> {
+async function parseAndLoadFile(fileContent: string) {
   try {
-    const entries = await fs.readdir(directory, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        // Recurse into subdirectories
-        await loadJSONFiles(fullPath);
-      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.json')) {
-        console.log(`Processing file: ${fullPath}`);
-        try {
-          const fileContent = await fs.readFile(fullPath, 'utf8');
-          const jsonData = JSON.parse(fileContent);
-          // Insert the JSON data as a document in MongoDB
-          await JsonDoc.create(jsonData);
-          console.log(`Inserted document from ${fullPath}`);
-        } catch (err) {
-          console.error(`Error processing file ${fullPath}:`, err);
-        }
-      }
-    }
+    const jsonData = JSON.parse(fileContent);
+    await JsonDoc.create(jsonData);
+    logger.info('Inserted document.');
   } catch (err) {
-    console.error(`Error reading directory ${directory}:`, err);
+    logger.error('Could not insert document.', err);
   }
 }
 
 async function main() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
-    console.error('MONGO_URI environment variable not set.');
+    logger.error('MONGO_URI environment variable not set.');
     process.exit(1);
   }
 
   // Connect to MongoDB using Mongoose
   try {
     await mongoose.connect(mongoUri);
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB');
   } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
+    logger.error('Error connecting to MongoDB:', error);
     process.exit(1);
   }
 
@@ -60,12 +39,12 @@ async function main() {
   const baseDir = '/congress'; // <-- Update this path as needed
 
   // Load JSON files recursively and insert them into MongoDB
-  await loadJSONFiles(baseDir);
-  console.log('Finished loading JSON files.');
+  await recursivelyProcessFiles(baseDir, parseAndLoadFile);
+  logger.info('Finished loading JSON files.');
 
   // Disconnect from MongoDB
   await mongoose.disconnect();
-  console.log('Disconnected from MongoDB.');
+  logger.info('Disconnected from MongoDB.');
 }
 
-main().catch((err) => console.error('Unexpected error:', err));
+main().catch((err) => logger.error('Unexpected error:', err));

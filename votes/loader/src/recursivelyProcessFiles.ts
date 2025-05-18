@@ -1,24 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import winston from 'winston';
-
-const logger = winston.createLogger({level: 'info',
-  format: winston.format.json(),
-  defaultMeta: { service: 'file-processor'},
-  transports: [
-    new winston.transports.File({filename: 'error.log', level: 'error'}),
-    new winston.transports.File({filename: 'combined.log'})
-  ],
-})
-
-if (process.env.NODE_ENV !== 'prod') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }))
-}
+import logger from './logger';
 
 /**
- * Recursively traverses the given directory and inserts any JSON files into MongoDB.
+ * Recursively traverses the given directory and applies a function to each file.
  * @param directory - The base directory to scan.
  * @param processingFunction - Function to run on each file.
  */
@@ -31,7 +16,7 @@ export default async function recursivelyProcessFiles(directory: string, process
         // Recurse into subdirectories
         await recursivelyProcessFiles(fullPath, processingFunction);
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.json')) {
-        logger.info({message: `Processing file: ${fullPath}`});
+        logger.info({message: `Reading file: ${fullPath}`});
         try {
           const fileContent = await fs.readFile(fullPath, 'utf8');
           processingFunction(fileContent);
