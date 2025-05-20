@@ -7,12 +7,12 @@ interface JsonDocDocument extends mongoose.Document {}
 
 // Create a flexible schema (strict mode disabled) to accept any JSON data
 const JsonDocSchema = new mongoose.Schema({}, { strict: false });
-const JsonDoc = mongoose.model<JsonDocDocument>('votes', JsonDocSchema);
+const Vote = mongoose.model<JsonDocDocument>('Vote', JsonDocSchema);
 
 async function parseAndLoadFile(fileContent: string) {
   try {
     const jsonData = JSON.parse(fileContent);
-    await JsonDoc.create(jsonData);
+    await Vote.replaceOne({vote_id: jsonData.vote_id}, jsonData, {upsert: true});
     logger.info('Inserted document.');
   } catch (err) {
     logger.error('Could not insert document.', err);
@@ -30,13 +30,14 @@ async function main() {
   try {
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB');
+
   } catch (error) {
     logger.error('Error connecting to MongoDB:', error);
     process.exit(1);
   }
 
   // Define the base directory where your JSON files are stored.
-  const baseDir = '/congress'; // <-- Update this path as needed
+  const baseDir = '/congress';
 
   // Load JSON files recursively and insert them into MongoDB
   await recursivelyProcessFiles(baseDir, parseAndLoadFile);

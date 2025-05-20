@@ -1,7 +1,10 @@
 import winston from 'winston';
 
 const logger = winston.createLogger({level: 'info',
-  format: winston.format.json(),
+  format: winston.format.combine(
+    winston.format.json(),
+    winston.format.timestamp()
+  ),
   defaultMeta: { service: 'file-processor'},
   transports: [
     new winston.transports.File({filename: 'error.log', level: 'error'}),
@@ -11,7 +14,11 @@ const logger = winston.createLogger({level: 'info',
 
 if (process.env.NODE_ENV !== 'prod') {
   logger.add(new winston.transports.Console({
-    format: winston.format.simple()
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.timestamp(),
+      winston.format.simple(),
+    )
   }))
 }
 
