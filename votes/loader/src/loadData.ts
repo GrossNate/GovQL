@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import recursivelyProcessFiles from './recursivelyProcessFiles';
 import logger from './logger';
+import * as cron from 'node-cron';
 
 // Define interface for our document (empty since we allow any JSON structure)
 interface JsonDocDocument extends mongoose.Document {}
@@ -12,7 +13,9 @@ const Vote = mongoose.model<JsonDocDocument>('Vote', JsonDocSchema);
 async function parseAndLoadFile(fileContent: string) {
   try {
     const jsonData = JSON.parse(fileContent);
-    await Vote.replaceOne({vote_id: jsonData.vote_id}, jsonData, {upsert: true});
+    await Vote.replaceOne({ vote_id: jsonData.vote_id }, jsonData, {
+      upsert: true,
+    });
     logger.info('Inserted document.');
   } catch (err) {
     logger.error('Could not insert document.', err);
@@ -30,7 +33,6 @@ async function main() {
   try {
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB');
-
   } catch (error) {
     logger.error('Error connecting to MongoDB:', error);
     process.exit(1);
@@ -48,4 +50,6 @@ async function main() {
   logger.info('Disconnected from MongoDB.');
 }
 
-main().catch((err) => logger.error('Unexpected error:', err));
+cron.schedule('15 * * * *', () =>
+  main().catch((err) => logger.error('Unexpected error:', err))
+);
