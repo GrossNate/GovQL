@@ -1,13 +1,12 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import mongoose from 'mongoose';
-import * as composeMongoose from 'graphql-compose-mongoose';
+import { composeMongoose } from 'graphql-compose-mongoose';
 import {
   schemaComposer,
   ResolverFilterArgConfigDefinition,
 } from 'graphql-compose';
 // import { EnvelopArmor } from '@escape.tech/graphql-armor';
-import dotenvx from '@dotenvx/dotenvx';
 import { useRateLimiter } from '@envelop/rate-limiter';
 import {
   GraphQLDirective,
@@ -20,7 +19,6 @@ import {
 // import { usePrometheus } from '@graphql-yoga/plugin-prometheus';
 import { useOpenTelemetry } from '@envelop/opentelemetry';
 
-dotenvx.config();
 
 const MONGO_URI = process.env.MONGO_URI ?? '';
 
@@ -101,7 +99,7 @@ const VoteContainerSchema = new mongoose.Schema({
 const VoteContainer = mongoose.model('votes', VoteContainerSchema);
 
 // TODO: figure out how to resolve the TS error without ignoring.
-// @ts-ignore
+// @ts-expect-error Having issues with figuring out the right type here.
 const VoteContainerTC = composeMongoose(VoteContainer);
 
 // STEP 2.5: Create some filters

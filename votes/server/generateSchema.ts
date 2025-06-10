@@ -1,10 +1,8 @@
 import mongoose, { Schema } from 'mongoose';
-import dotenvx from '@dotenvx/dotenvx';
-
-dotenvx.config();
+import * as z from 'zod';
 
 // Replace with your MongoDB URI and collection name
-const MONGO_URI = process.env.MONGO_URI ?? '';
+const MONGO_URI = z.string().parse(process.env.MONGO_URI);
 const COLLECTION_NAME = 'votes';
 
 async function generateSchemaFromCollection() {
@@ -18,12 +16,12 @@ async function generateSchemaFromCollection() {
   
   if (sampleDocs.length === 0) {
     console.log('No documents found in the collection.');
-    mongoose.disconnect();
+    void mongoose.disconnect();
     return;
   }
 
   // Function to infer Mongoose field types
-  function inferType(value: any): any {
+  function inferType(value: unknown): any {
     if (Array.isArray(value)) {
       return [inferType(value[0])];
     }
@@ -49,7 +47,7 @@ async function generateSchemaFromCollection() {
 
   console.log('Generated Schema:', inferredSchema);
 
-  mongoose.disconnect();
+  void mongoose.disconnect();
 }
 
 generateSchemaFromCollection().catch(console.error);

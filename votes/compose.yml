@@ -8,11 +8,14 @@ services:
   mongo:
     image: mongo
     restart: always
+    ports:
+      - 27017:27017 # close the port in production
     environment:
       - MONGO_INITDB_ROOT_USERNAME
       - MONGO_INITDB_ROOT_PASSWORD
     volumes:
       - mongo-data:/data/db
+  # mongo-express comes out in production
   mongo-express:
     image: mongo-express
     restart: always
