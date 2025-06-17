@@ -35,6 +35,14 @@ services:
       - scraped-data:/congress
     depends_on:
       - mongo
+  yoga_server:
+    build: server/.
+    ports:
+      - 4000:4000
+    environment:
+      - MONGO_URI
+    depends_on:
+      - mongo
 
 volumes:
   scraped-data:
